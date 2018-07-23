@@ -1,7 +1,7 @@
 
 if [ "$#" -ne 5 ]; then
     echo "Illegal number of parameters"
-    echo "usage: Command CONTAINER FILENAME TIME WARM WHICHLOAD"
+    echo "usage: Command CONTAINER FILENAME TIME WARM NO_WAREHOUSE"
     exit 1
 fi
 
@@ -10,18 +10,16 @@ FILENAME=$2
 
 TIME=$3
 WARM=$4
-WHICHLOAD=$5
 
-HALFTIME=$((TIME/2))
-echo "HALFTIME $HALFTIME"
-#CONNECTIONS=12
-WH=100
 
-MYSQLCPU=16-19
-BENCHMARKCPU=0-15
-NUMANODE=1
+
+WH=$5
+
+MYSQLCPU=0-3
+BENCHMARKCPU=4-7
+
 OUTPUTFOLDER="output"
-DISPLAYFILE=$OUTPUTFOLDER/display.txt
+
 OUTPUTFILE=$OUTPUTFOLDER/output.txt
 OUTPUTFILE2=$OUTPUTFOLDER/output2.txt
 LOADFILE=$OUTPUTFOLDER/loads.txt
@@ -32,16 +30,12 @@ TEMPFILE2=$OUTPUTFOLDER/temp2.txt
 TEMPFILE3=$OUTPUTFOLDER/temp3.txt
 DEBUGFILE=$OUTPUTFOLDER/debugfile.txt
 IDLEINSTRUCTIONSFILE=$OUTPUTFOLDER/idleinstructions.txt
-CPUUTILFILE=$OUTPUTFOLDER/cpuutilfile.txt
-CPUUTILFILETEMP=$OUTPUTFOLDER/cpuutilfiletemp.txt
-CPUUTILFILEPERM=$OUTPUTFOLDER/cpuutilfileperm.txt
+
 CPUUTILACTUALFILE=$OUTPUTFOLDER/cpuutilactual.txt
 rm $CPUUTILACTUALFILE
 touch $CPUUTILACTUALFILE
-rm $CPUUTILFILEPERM
-touch $CPUUTILFILEPERM
-rm $CPUUTILFILE
-touch CPUUTILFILE
+
+
 rm $OUTPUTFILE
 touch $OUTPUTFILE
 rm $OUTPUTFILE2
@@ -52,10 +46,11 @@ sudo pkill tpcc_start
 
 while read LOAD; do
     mysql=`pidof mysqld`
+    
     sudo taskset -cp $MYSQLCPU $mysql
     echo "mysqld process $mysql"
     sudo perf stat -p $mysql -e instructions:u sleep 5 2>>$DEBUGFILE
-    rm $DISPLAYFILE && touch $DISPLAYFILE
+    
     echo "LOAD = $LOAD"
 
     echo $temp
@@ -63,19 +58,19 @@ while read LOAD; do
 
 	docker exec -t $CONTAINER bash -c "taskset -c $BENCHMARKCPU /tpcc-mysql/tpcc_start -h127.0.0.1 -P3306 -dtpcc1000 -uroot -w$WH -c$LOAD -r$WARM -l1"
 	sudo pkill -9 tpcc_start
-	( (mpstat -N $NUMANODE $TIME 1> $CPUUTILFILETEMP)) &
+	
 	echo "-" >> $CPUUTILACTUALFILE
 	( (top -b -n$TIME -d1 | grep "mysqld$" | awk '{print $9}')>>$CPUUTILACTUALFILE ) &
 	( (sudo perf stat -p $mysql -e instructions:u docker exec -t $CONTAINER bash -c "taskset -c $BENCHMARKCPU /tpcc-mysql/tpcc_start -h127.0.0.1 -P3306 -dtpcc1000 -uroot -w$WH -c$LOAD -r0 -l$TIME -i$TIME") 1>$TEMPFILE3 2>$TEMPFILE1) && (echo "LOAD = $LOAD" > $TEMPFILE2)
-	(awk 'NR==4' $CPUUTILFILETEMP | awk '{print $NF}') >> $CPUUTILFILE
-	cat $CPUUTILFILETEMP >> $CPUUTILFILEPERM
+	
+	
 
     
     echo "perf done"
     cat $TEMPFILE1>>$OUTPUTFILE
     cat $TEMPFILE2>>$OUTPUTFILE
     cat $TEMPFILE3>>$OUTPUTFILE  
-    ((awk '/LOAD/{print}' $TEMPFILE2 | awk '{print $3}') && (awk '/instructions/{print}' $TEMPFILE1 | awk '{print $1}') && (awk '/trx/{print}' $TEMPFILE3 | awk '{print substr($3, 1, length($3)-1)}') && (awk 'NR==4' $CPUUTILFILETEMP | awk '{print $3}')  ) | tr '\n' ' ' >> $OUTPUTFILE2
+    ((awk '/LOAD/{print}' $TEMPFILE2 | awk '{print $3}') && (awk '/instructions/{print}' $TEMPFILE1 | awk '{print $1}') && (awk '/trx/{print}' $TEMPFILE3 | awk '{print substr($3, 1, length($3)-1)}')  ) | tr '\n' ' ' >> $OUTPUTFILE2
     echo "" >> $OUTPUTFILE2
 #( (awk '/LOAD/{print}' $TEMPFILE2 | awk '{print $3}') && ('/instructions/{print}' $TEMPFILE1 | awk '{print $1}' )  | tr '\n' ' ' ) >> $OUTPUTFILE2 
 
