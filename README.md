@@ -1,5 +1,5 @@
 # database_tests_simflex
-
+## Part 1
 Build the docker images for ARM as:
 ```
 docker build -t tpcc .
@@ -35,3 +35,15 @@ OUTPUTFOLDER
 are provided as an example and will require changes as per the requirement. 
 
 The Jupyter notebook plots.py can be used to make the necessary plots. 
+
+## Part 2
+
+In order to get the graph of coefficient of variation as a function of sampling time, we log the number of transactions done as a function of time. We changed the code of the benchmark in order to be able to do the loggin at milisecond precision instead of seconds. 
+To run this part, 
+
+```
+docker exec -it tpcc /tpcc/variation.sh RAMP_TIME(s) TIME(s) TIME_STEP(us) NO_CONNECTIONS WAREHOUSES > variation_output.txt
+awk '/trx/{print}' variation_output.txt | awk '{print $1}' > parsed_time.txt
+awk '/trx/{print}' variation_output.txt | awk '{print $3}' > parsed_trx.txt
+```
+The above text files can be used to plot the graphs (see variation.ipynb notebook).
