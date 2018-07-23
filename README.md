@@ -22,15 +22,14 @@ The script mysql.sh can be used to CPU Utilization, transactions, and No. of Use
 Run it as 
 
 ```
-./mysql.sh CONTAINER FILENAME MEASUREMENT_TIME WARMUPTIME WHICHLOAD
+./mysql.sh CONTAINER FILENAME MEASUREMENT_TIME WARMUPTIME NO_WAREHOUSES
 ```
 The filename should contain the list of loads for which the benchmark has to be run. 
 
 The environment variables:
 
 MYSQLCPU                                                                                                                                                                                                     
-BENCHMARKCPU                                                                                                                                                                                                  
-NUMANODE                                                                                                                                                                                                       
+BENCHMARKCPU                                                                                                                                                                                                                                                                                                                                                                                        
 OUTPUTFOLDER
 
 are provided as an example and will require changes as per the requirement. 
