@@ -42,7 +42,7 @@ In order to get the graph of coefficient of variation as a function of sampling 
 To run this part, 
 
 ```
-docker exec -it tpcc /tpcc/variation.sh RAMP_TIME(s) TIME(s) TIME_STEP(us) NO_CONNECTIONS WAREHOUSES > variation_output.txt
+docker exec -it tpcc /tpcc-mysql/variation.sh RAMP_TIME(s) TIME(s) TIME_STEP(us) NO_CONNECTIONS WAREHOUSES > variation_output.txt
 awk '/trx/{print}' variation_output.txt | awk '{print $1}' > parsed_time.txt
 awk '/trx/{print}' variation_output.txt | awk '{print $3}' > parsed_trx.txt
 ```
